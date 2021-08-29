@@ -4,4 +4,14 @@
   padding: 0;
 }
 
-// TODO
+:root {
+  --white: #ffffff;
+
+  --gray-100: #D7D7D7;
+}
+
+html {
+  font-size: 62.5%;
+  font-family: 'Inter', sans-serif;
+  background: #1A1D23;
+}
