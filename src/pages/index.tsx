@@ -1,6 +1,11 @@
 import { GetStaticProps } from 'next';
 
 import { getPrismicClient } from '../services/prismic';
+import Prismic from '@prismicio/client';
+import { RichText } from 'prismic-dom';
+
+import { format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
@@ -17,6 +22,10 @@ interface Post {
   };
 }
 
+interface PostsProps {
+  postsArray: Post[]
+}
+
 interface PostPagination {
   next_page: string;
   results: Post[];
@@ -26,10 +35,11 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-export default function Home() {
+export default function Home({ postsArray }: PostsProps) {
+  console.log(postsArray)
   return (
     <main className={styles.homeContainer}>
-      <img src="assets/icons/Logo.svg" className={styles.logo} alt="spacetraveling logo" />
+      <img src="assets/images/Logo.svg" className={styles.logo} alt="spacetraveling logo" />
       
       <div className={styles.post}>
 
@@ -72,13 +82,40 @@ export default function Home() {
           <h6>Joseph Oliveira</h6>
         </div>
       </div>
+
+      <h3 className={styles.loadMorePosts}>Carregar mais posts</h3>
     </main>
   )
 }
 
-// export const getStaticProps = async () => {
-//   // const prismic = getPrismicClient();
-//   // const postsResponse = await prismic.query(TODO);
+export const getStaticProps: GetStaticProps = async () => {
+  const prismic = getPrismicClient();
+  const postsResponse = await prismic.query([
+    Prismic.predicates.at('document.type', 'posts')
+  ], {
+    fetch: ['posts.title', 'posts.subtitle', 'posts.author'],
+    pageSize: 100
+  });
 
-//   // TODO
-// };
+  const postsArray = postsResponse.results.map(post => {
+    return {
+      slug: post.uid,
+      first_publication_date: format(
+        new Date(post.last_publication_date),
+        'dd MMM uuuu',
+        {
+          locale: ptBR,
+        }
+      ),
+      data: {
+        title: post.data.title,
+        subtitle: post.data.subtitle,
+        author: post.data.author
+      }
+    }
+  })
+
+  return {
+    props: {postsArray}
+  }
+};
