@@ -51,4 +51,10 @@
     font-weight: 600;
     color: var(--pink);
     margin-top: 6.4rem;
+    cursor: pointer;
+    transition: filter 0.2s;
+
+    &:hover {
+        filter: brightness(0.8);
+    }
 }

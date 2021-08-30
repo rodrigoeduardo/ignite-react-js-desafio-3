@@ -11,6 +11,8 @@ import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 
 import { FiCalendar, FiUser } from 'react-icons/fi'
+import { useEffect } from 'react';
+import { useState } from 'react';
 
 interface Post {
   uid?: string;
@@ -22,10 +24,6 @@ interface Post {
   };
 }
 
-interface PostsProps {
-  postsArray: Post[]
-}
-
 interface PostPagination {
   next_page: string;
   results: Post[];
@@ -35,55 +33,46 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-export default function Home({ postsArray }: PostsProps) {
-  console.log(postsArray)
+export default function Home({ postsPagination }: HomeProps) {
+  const [posts, setPosts] = useState<Post[]>([])
+
+  const [nextPage, setNextPage] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPosts([...postsPagination.results])
+    setNextPage(postsPagination.next_page)
+  }, [])
+
+  function handleLoadMorePosts() {
+    fetch(nextPage)
+    .then(response => response.json())
+    .then((data: PostPagination) => {
+      setPosts([...posts, ...data.results])
+      setNextPage(data.next_page)
+    })
+  }
+  
   return (
     <main className={styles.homeContainer}>
-      <img src="assets/images/Logo.svg" className={styles.logo} alt="spacetraveling logo" />
+      <img src="assets/images/Logo.svg" className={styles.logo} alt="logo" />
       
-      <div className={styles.post}>
+      {posts.map(post => (
+      <div key={post.uid} className={styles.post}>
 
-        <h1>Como utilizar hooks</h1>
+        <h1>{post.data.title}</h1>
 
-        <p>Pensando em sincronização em vez de ciclos de vida.</p>
+        <p>{post.data.subtitle}</p>
         
         <div className={styles.info}>
           <FiCalendar size={20} />
-          <time>15 Mar 2021</time>
+          <time>{post.first_publication_date}</time>
           <FiUser size={20} />
-          <h6>Joseph Oliveira</h6>
+          <h6>{post.data.author}</h6>
         </div>
       </div>
+      ))}
 
-      <div className={styles.post}>
-
-        <h1>Como utilizar hooks</h1>
-
-        <p>Pensando em sincronização em vez de ciclos de vida.</p>
-        
-        <div className={styles.info}>
-          <FiCalendar size={20} />
-          <time>15 Mar 2021</time>
-          <FiUser size={20} />
-          <h6>Joseph Oliveira</h6>
-        </div>
-      </div>
-
-      <div className={styles.post}>
-
-        <h1>Como utilizar hooks</h1>
-
-        <p>Pensando em sincronização em vez de ciclos de vida.</p>
-        
-        <div className={styles.info}>
-          <FiCalendar size={20} />
-          <time>15 Mar 2021</time>
-          <FiUser size={20} />
-          <h6>Joseph Oliveira</h6>
-        </div>
-      </div>
-
-      <h3 className={styles.loadMorePosts}>Carregar mais posts</h3>
+      {nextPage !== null && <h3 className={styles.loadMorePosts} onClick={handleLoadMorePosts}>Carregar mais posts</h3>}
     </main>
   )
 }
@@ -94,14 +83,14 @@ export const getStaticProps: GetStaticProps = async () => {
     Prismic.predicates.at('document.type', 'posts')
   ], {
     fetch: ['posts.title', 'posts.subtitle', 'posts.author'],
-    pageSize: 100
+    pageSize: 1
   });
 
   const postsArray = postsResponse.results.map(post => {
     return {
-      slug: post.uid,
+      uid: post.uid,
       first_publication_date: format(
-        new Date(post.last_publication_date),
+        new Date(post.first_publication_date),
         'dd MMM uuuu',
         {
           locale: ptBR,
@@ -115,7 +104,12 @@ export const getStaticProps: GetStaticProps = async () => {
     }
   })
 
+  const postsPagination: PostPagination = {
+    next_page: postsResponse.next_page,
+    results: postsArray
+  };
+
   return {
-    props: {postsArray}
+    props: {postsPagination}
   }
 };
