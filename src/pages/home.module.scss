@@ -3,12 +3,9 @@
     margin: 0 auto;
 }
 
-.logo {
-    margin-top: 8rem;
-    margin-bottom: 6.5rem;
-}
-
 .post {
+    cursor: pointer;
+
     & + & {
         margin-top: 4.8rem
     }

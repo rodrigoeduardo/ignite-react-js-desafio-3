@@ -1,4 +1,5 @@
 import { GetStaticProps } from 'next';
+import Link from 'next/Link';
 
 import { getPrismicClient } from '../services/prismic';
 import Prismic from '@prismicio/client';
@@ -54,22 +55,29 @@ export default function Home({ postsPagination }: HomeProps) {
   
   return (
     <main className={styles.homeContainer}>
-      <img src="assets/images/Logo.svg" className={styles.logo} alt="logo" />
       
       {posts.map(post => (
-      <div key={post.uid} className={styles.post}>
+        <Link href={`/post/${post.uid}`}>
+          <div key={post.uid} className={styles.post}>
 
-        <h1>{post.data.title}</h1>
+            <h1>{post.data.title}</h1>
 
-        <p>{post.data.subtitle}</p>
-        
-        <div className={styles.info}>
-          <FiCalendar size={20} />
-          <time>{post.first_publication_date}</time>
-          <FiUser size={20} />
-          <h6>{post.data.author}</h6>
-        </div>
-      </div>
+            <p>{post.data.subtitle}</p>
+            
+            <div className={styles.info}>
+              <FiCalendar size={20} />
+              <time>
+                {format(
+                new Date(post.first_publication_date),
+                'dd MMM uuuu',
+                { locale: ptBR, }
+                )}
+                </time>
+              <FiUser size={20} />
+              <h6>{post.data.author}</h6>
+            </div>
+          </div>
+        </Link>
       ))}
 
       {nextPage !== null && <h3 className={styles.loadMorePosts} onClick={handleLoadMorePosts}>Carregar mais posts</h3>}
@@ -89,13 +97,7 @@ export const getStaticProps: GetStaticProps = async () => {
   const postsArray = postsResponse.results.map(post => {
     return {
       uid: post.uid,
-      first_publication_date: format(
-        new Date(post.first_publication_date),
-        'dd MMM uuuu',
-        {
-          locale: ptBR,
-        }
-      ),
+      first_publication_date: post.first_publication_date,
       data: {
         title: post.data.title,
         subtitle: post.data.subtitle,
