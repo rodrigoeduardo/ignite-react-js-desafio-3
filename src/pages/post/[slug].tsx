@@ -1,3 +1,5 @@
+import ptBR from 'date-fns/locale/pt-BR';
+import format from 'date-fns/format';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { RichText } from 'prismic-dom';
 import { FiCalendar, FiClock, FiUser } from 'react-icons/fi';
@@ -25,31 +27,48 @@ interface Post {
 }
 
 interface PostProps {
-  post: Post;
+  response: Post;
 }
 
-export default function Post({post}) {
-  console.log(post)
-  
+export default function Post({response}: PostProps) {
+
+  const { author, banner, title, content } = response.data;  
+  const first_publication_date = format(new Date(response.first_publication_date), 'dd MMM uuuu', { locale: ptBR });
+
+  let entireContent = '';
+
+  response.data.content.forEach(postContent => {
+    entireContent += postContent.heading;
+    entireContent += RichText.asText(postContent.body);
+  });
+
   return (
     <main className={styles.post}>
-      <img src="/assets/images/Banner.png" alt="" />
+      <img src={banner.url} alt="" />
 
       <article className={styles.postContainer}>
-        <h1>Criando um app CRA do zero</h1>
+        <h1>{title}</h1>
 
         <div className={styles.info}>
           <FiCalendar size={20} />
-          <time>15 Mar 2021</time>
+          <time>{first_publication_date}</time>
           <FiUser size={20} />
-          <h6>Joseph Oliveira</h6>
+          <h6>{author}</h6>
           <FiClock size={20} />
           <h6>4 min</h6>
         </div>
 
-        <div className={styles.postContent}>
-          Lorem ipsum
-        </div>
+        {content.map(content => (
+          <div key={content.heading} className={styles.postContent}>
+            <h2>{content.heading}</h2>
+
+            <div
+              dangerouslySetInnerHTML={{
+                __html: RichText.asHtml(content.body),
+              }}
+            />
+          </div>
+        ))}
       </article>
     </main>
   )
@@ -73,19 +92,7 @@ export const getStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
   const response = await prismic.getByUID('posts', String(slug), {});
 
-  const post = {
-    first_publication_date: response.first_publication_date,
-    data: {
-      title: response.data.title,
-      banner: {
-        url: response.data.banner.url
-      },
-      author: response.data.author,
-      content: response.data.content
-    }
-  }
-
   return {
-    props: {post}
+    props: {response}
   }
 };
