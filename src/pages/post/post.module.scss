@@ -30,18 +30,28 @@
 }
 
 .postContent {
-    margin-top: 6.4rem;
-    color: var(--white);
+    margin: 6.4rem 0;
     font-size: 1.8rem;
     font-weight: 400;
 
     h2 {
+        color: var(--white);
         font-weight: 700;
         font-size: 3.6rem;
         margin-bottom: 3rem;
     }
 
     div {
+        line-height: 140%;
+        text-align: justify;
         
+        p, li {
+            color: var(--gray-100);
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--pink);
+        }
     }
 }
