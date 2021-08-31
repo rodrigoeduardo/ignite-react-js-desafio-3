@@ -5,9 +5,11 @@ import { RichText } from 'prismic-dom';
 import { FiCalendar, FiClock, FiUser } from 'react-icons/fi';
 
 import { getPrismicClient } from '../../services/prismic';
+import Prismic from '@prismicio/client';
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
+import { useRouter } from 'next/router';
 
 interface Post {
   first_publication_date: string | null;
@@ -27,24 +29,34 @@ interface Post {
 }
 
 interface PostProps {
-  response: Post;
+  post: Post;
 }
 
-export default function Post({response}: PostProps) {
+export default function Post({post}: PostProps) {
+  const router = useRouter();
 
-  const { author, banner, title, content } = response.data;  
-  const first_publication_date = format(new Date(response.first_publication_date), 'dd MMM uuuu', { locale: ptBR });
+  if (router.isFallback) {
+    return <div>Carregando...</div>
+  }
+
+  const { author, banner, title, content } = post.data;  
+  const first_publication_date = format(new Date(post.first_publication_date), 'dd MMM uuuu', { locale: ptBR });
 
   let entireContent = '';
+  const regex = /[\s]/mgiu;
 
-  response.data.content.forEach(postContent => {
-    entireContent += postContent.heading;
+  post.data.content.forEach(postContent => {
+    entireContent += postContent.heading+" ";
     entireContent += RichText.asText(postContent.body);
   });
 
+  const wordsInContent = entireContent.split(regex).length;
+
+  const timeToRead = Math.ceil(wordsInContent/200)
+
   return (
     <main className={styles.post}>
-      <img src={banner.url} alt="" />
+      <img src={banner.url} alt="Banner do post" />
 
       <article className={styles.postContainer}>
         <h1>{title}</h1>
@@ -55,7 +67,7 @@ export default function Post({response}: PostProps) {
           <FiUser size={20} />
           <h6>{author}</h6>
           <FiClock size={20} />
-          <h6>4 min</h6>
+          <h6>{timeToRead} min</h6>
         </div>
 
         {content.map(content => (
@@ -74,25 +86,36 @@ export default function Post({response}: PostProps) {
   )
 }
 
-export const getStaticPaths = async () => {
-  // const prismic = getPrismicClient();
-  // const posts = await prismic.query(TODO);
+export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient();
+  const posts = await prismic.query([
+    Prismic.predicates.at('document.type', 'posts')
+  ], {
+    pageSize: 1
+  });
+
+  const paths = posts.results.map(post => ({
+    params: {
+      slug: post.uid
+    }
+  }))
 
   return {
-    paths: [],
-    fallback: 'blocking'
+    paths,
+    fallback: true
   }
-  
-  // TODO
 };
 
-export const getStaticProps = async ({ params }) => {
+export const getStaticProps: GetStaticProps = async ({ params }) => {
   const slug = params.slug;
 
   const prismic = getPrismicClient();
   const response = await prismic.getByUID('posts', String(slug), {});
 
   return {
-    props: {response}
+    props: {
+      post: response
+    },
+    revalidate: 60 * 30 // 30 minutes
   }
 };
